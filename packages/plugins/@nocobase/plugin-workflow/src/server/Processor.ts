@@ -102,9 +102,13 @@ export default class Processor {
   }
 
   public async prepare() {
-    const { execution, transaction } = this;
+    const {
+      execution,
+      transaction,
+      options: { plugin },
+    } = this;
     if (!execution.workflow) {
-      execution.workflow = await execution.getWorkflow({ transaction });
+      execution.workflow = plugin.enabledCache.get(execution.workflowId);
     }
 
     const nodes = await execution.workflow.getNodes({ transaction });
@@ -164,10 +168,7 @@ export default class Processor {
           err instanceof Error
             ? {
                 message: err.message,
-                stack:
-                  process.env.NODE_ENV === 'production'
-                    ? 'Error stack will not be shown under "production" environment, please check logs.'
-                    : err.stack,
+                ...err,
               }
             : err,
         status: JOB_STATUS.ERROR,

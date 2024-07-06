@@ -48,6 +48,8 @@ function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyD
     const model = this.model;
     const beforeAssociationKeys = Object.keys(model.associations);
     const beforeRawAttributes = Object.keys(model.rawAttributes);
+    const fieldName = args[0];
+    const beforeField = this.getField(fieldName);
 
     try {
       return originalMethod.apply(this, args);
@@ -64,6 +66,12 @@ function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyD
       for (const key of createdRawAttributes) {
         delete this.model.rawAttributes[key];
       }
+
+      // remove field created in this method
+      if (!beforeField) {
+        this.removeField(fieldName);
+      }
+
       throw error;
     }
   };
@@ -242,6 +250,8 @@ export class Collection<
     // @ts-ignore
     this.model = class extends M {};
     this.model.init(null, this.sequelizeModelOptions());
+
+    this.model.options.modelName = this.options.name;
 
     if (!autoGenId) {
       this.model.removeAttribute('id');
